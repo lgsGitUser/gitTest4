@@ -1,0 +1,287 @@
+复习：
+	上节课学习:dao+service配合使用
+	理论上学习了网络知识
+
+1、登录
+	1.1.首先我们先创建一个html页面，然后设计两个输入框（分别是用户名和密码）一个按钮用来提交数据
+	
+	原理：
+		我们要做的就是当点击按钮的时候，访问服务器（携带用户名和密码进行访问），
+		然后要服务器通过Java代码去访问数据库，看一下这个用户是否存在，然后返回结果给浏览器，
+		然后浏览器做出判断
+		
+		也就是说 我们的项目工程不仅仅可以访问林方祥的图片资源，还能够访问Java代码
+		
+		那么如何访问Java代码呢？Tomcat提供了一个类叫做HttpServlet 超文本传输协议插件
+		HttpServlet就是用来让 浏览器端访问 服务器的Java代码。
+	
+	1.2.编写ajax提交数据：
+		1.2.1.我们先要去下载jquery的插件
+			网站：https://code.jquery.com/jquery-3.4.1.min.js
+			点击右键 另存为 就可以下载到这个js插件了
+		1.2.2.将插件复制到WebContent文件夹中
+		1.2.3.开始编写按钮的监听功能：
+			<body>
+				<h1>登录业务</h1>
+				<hr>
+				<table align="center">
+					<tr>
+						<td>用户名</td>
+						<td><input placeholder="请输入用户名" id="name" type="text" /></td>
+					</tr>
+					<tr>
+						<td>密码</td>
+						<td><input placeholder="请输入密码" id="pwd" type="pawwsord" /></td>
+					</tr>
+					<tr align="center">
+						<td colspan="2">
+							<input id="doLogin" value="登录" type="button">
+						</td>
+					</tr>
+				</table>
+			</body>
+			<script type="text/javascript" src="jquery-3.4.1.min.js"></script>
+			<script type="text/javascript">
+				$('#doLogin').click(function(){
+					alert('老师特别帅');
+				});
+			</script>
+	
+		1.2.4.在监听中编写ajax的格式：
+			// 参数：
+			// url:
+			// 需要访问的链接，如果写adminLogin，那么链接将是：http://localhost:8080/project0226/adminLogin
+			// 这里的url写法的意义也是和昨天的图片img标签的src相同
+			// data
+			// 先要通过jq来获取输入框的值，然后加载到data的参数中
+			// 这里的zhanghu和mima两个名字就是服务器中获取值的条件
+			// type:
+			// 我们发送数据的时候需要告诉系统我们用什么方式进行数据发送，发送方式一共七种，常用两种：get，post
+			// success：（状态码：200属于success）
+			// 后面跟着的是一个方法，这个方法只要服务器发回来数据就直接进行相应
+			// error:（状态码：200以外的都属于error）
+			// 后面也是跟着方法，服务器只要响应失败就调用此方法
+			
+			var name = $('#name').val();
+			var pwd = $('#pwd').val();
+			$.ajax({
+				url: 'adminLogin', 
+				data:{'zhanghu':name, 'mima':pwd},
+				type:'post',
+				success:function(msg){
+					alert(msg);
+				},
+				error:function(msg){
+					alert('请联系管理员...');
+				}
+			});
+		
+		1.2.5.创建servlet和ajax进行对应，也就是说，让ajax的请求连接Tomcat对应的Servlet
+			1、创建一个类继承于HttpServlet
+			2、因为ajax是post请求，所以我们重写一个doPost的方法
+			3、删除doPost里面的 super.doPost(req, resp); 代码
+			4、写一句话作为测试
+			5、配置web.xml文件（WebContent/WEB-INF/web.xml）
+				  <servlet>
+					<!-- 这里的servletname必须和servlet-mapping里面的servletname的值相同 -->
+					<servlet-name>林方祥</servlet-name>
+					<!-- 这里写的就是 包名+类名，也就是我们需要访问的servlet的类 -->
+					<servlet-class>org.lgs.servlet.AdminLoginServlet</servlet-class>
+				  </servlet>
+				  
+				  <servlet-mapping>
+					<!-- 这里的servletname随便写，写什么都可以 -->
+					<servlet-name>林方祥</servlet-name>
+					<!-- 这里配置的就是你需要请求的url信息了，就是ajax的url的值，并且前面加一个斜杆 -->
+					<url-pattern>/adminLogin</url-pattern> 
+				  </servlet-mapping>
+				注意：只要修改了web.xml代码，tomcat必须重启
+			
+			原理：
+				当ajax提交 adminLogin 的链接的时候，Tomcat首先回去对应的项目中查看web.xml文件，看看有没有对应url匹配
+				也就是web.xml中所有的 url-pattern 值是否有匹配的
+				
+				如果有匹配，那么就去查看servlet-mapping 中的servlet-name，叫做林方祥
+				之后再去查找 servlet 中 与之对应的servlet-name
+				匹配后找到 servlet-class，也就找到了对应的java类了
+				通过请求的方式（get，post）执行对应类里面的，doGet或者doPost方法
+			
+			
+			6、获取参数以及返回参数
+				获取参数：
+					String name = req.getParameter("zhanghu");
+					String pwd = req.getParameter("mima");
+					System.out.println(name + ":" + pwd);
+				
+				返回参数：
+					1.创建一个类叫做JsonMessage，里面有一些属性：
+						id -》代表返回数据的成败（1-》登录成功；0-》登录失败）
+						message -》 返回数据的信息 （"登录成功", "登录失败，密码或用户名输入有误"）
+						location -》 返回的跳转页面 -》 "main.html"
+						HashMap -》 如果返回数据很多我就放在这个map中（分页）
+						
+						例如:
+						public class JsonMessage {
+							private int id;
+							private String message;
+							private String location;
+							private Map<String, Object> datas = new HashMap<String, Object>();
+						}
+						
+					// 1.整理需要返回的数据
+					JsonMessage msg = new JsonMessage();
+					msg.setId(1);
+					msg.setMessage("登录成功");
+					msg.setLocation("main.html");
+					// 2.将对象转换成json数据字符串
+					String json = JSONObject.toJSONString(msg);
+					// 3.将字符串发送出去
+					resp.getWriter().println(json);
+				
+				
+				获取参数和返回参数都需要设置编码格式，不让数据乱码：
+					req.setCharacterEncoding("UTF-8");
+					resp.setCharacterEncoding("UTF-8");
+				
+				注意事项：我们返回的数据是字符串，所以浏览器得到的数据就是字符串类型，那么字符串类型就不能点出属性值了，所以
+					我们需要使用AJAX的另一个属性： dataType:'JSON', // 这个意思是自动帮助我们转换JSON字符串，转换成JSON对象
+					那么就会自动转换字符串，转换成json对象，这样就可以点出属性名了
+				
+			
+			7、实现整套的登录业务：
+				7.1.编写dao的登录查询：
+					@Override
+					public ZyAdmin queryAdmin(Connection conn, String name, String pwd) {
+						String sql = "SELECT * FROM ZY_ADMIN WHERE USERNAME = ? AND PASSWORD = ? ";
+						try {
+							PreparedStatement ps = conn.prepareStatement(sql);
+							ps.setString(1, name);
+							ps.setString(2, pwd);
+							ResultSet set = ps.executeQuery();
+							if(set.next()) {
+								int zaid = set.getInt("ZAID");
+								String username = set.getString("USERNAME");
+								String password = set.getString("PASSWORD");
+								Date adminCtime = set.getDate("ADMIN_CTIME");
+								int adminState = set.getInt("ADMIN_STATE");
+								int adminSex = set.getInt("ADMIN_SEX");
+								String adminTel = set.getString("ADMIN_TEL");
+								
+								ZyAdmin admin = new ZyAdmin(zaid, username, password, adminCtime, adminState, adminSex, adminTel);
+								return admin;
+							}
+						} catch (SQLException e) {
+							e.printStackTrace();
+						}
+						return null;
+					}
+				7.2.编写service的业务
+					在内部通过工厂调用对应的方法
+					@Override
+					public ZyAdmin login(String name, String pwd) {
+						// TODO Auto-generated method stub
+						Connection conn = ConnUtil.getConn(); // 这里的Connection = 林方祥
+						try {
+							// 自动提交关闭，相当于不让林方祥回家交差，如果不写这句话相当于林方祥买了酱油就跑了，不管醋有没有卖
+							conn.setAutoCommit(false); 
+							ZyAdminDaoImpl impl = (ZyAdminDaoImpl) DaoFactory.newInstance().getDao("ZyAdminDao");
+							ZyAdmin admin = impl.queryAdmin(conn, name, pwd);
+							conn.commit(); // 确定事情完成，可以回家了
+							return admin;
+						} catch (SQLException e) {
+							e.printStackTrace();
+						} finally {
+							try {
+								conn.close();
+							} catch (SQLException e) {
+								e.printStackTrace();
+							}
+						}
+						return null;
+					}
+				7.3.编写servlet的业务：
+					@Override
+					protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+						// TODO Auto-generated method stub
+						// System.out.println("林方祥很帅，那是假的...");
+						req.setCharacterEncoding("UTF-8");
+						resp.setCharacterEncoding("UTF-8");
+						
+						
+						// 通过ajax提交的data里面的获取参数的key（条件）来获取参数
+						String name = req.getParameter("zhanghu");
+						String pwd = req.getParameter("mima");
+						System.out.println(name + ":" + pwd);
+						
+						// 收到信息，开始做数据库查询
+						ZyAdminServiceImpl impl = (ZyAdminServiceImpl) ServiceFactory.newInstance().getService("ZyAdminService");
+						ZyAdmin admin = impl.login(name, pwd);
+						
+						if(admin != null) {
+							// 1.整理需要返回的数据
+							JsonMessage msg = new JsonMessage();
+							msg.setId(1);
+							msg.setMessage("登录成功");
+							msg.setLocation("main.html");
+							// 2.将对象转换成json数据字符串
+							String json = JSONObject.toJSONString(msg);
+							// 3.将字符串发送出去
+							resp.getWriter().println(json);
+						}else {
+							// 1.整理需要返回的数据
+							JsonMessage msg = new JsonMessage();
+							msg.setId(0);
+							msg.setMessage("登录失败，用户名或密码错误");
+							// 2.将对象转换成json数据字符串
+							String json = JSONObject.toJSONString(msg);
+							// 3.将字符串发送出去
+							resp.getWriter().println(json);
+						}
+
+						
+					}
+				7.4.修改ajax的业务：
+					var name = $('#name').val();
+					var pwd = $('#pwd').val();
+					$.ajax({
+						url: 'adminLogin', 
+						data:{'zhanghu':name, 'mima':pwd},
+						type:'post',
+						dataType:'JSON', // 这个意思是自动帮助我们转换JSON字符串，转换成JSON对象
+						success:function(msg){
+							// msg 仅仅是字符串而不是json对象所以没办法.message(也就是没办法点属性名),所以呢需要转换成json对象才可以
+							// alert(msg.message);
+							if(msg.id == 0){
+								alert(msg.message);
+							}else{
+								alert(msg.message);
+								// 再次访问服务器，和服务器说，我要xxx界面
+								window.location.href = msg.location;
+							}
+						},
+						error:function(msg){
+							alert('请联系管理员...');
+						}
+					});
+			
+		任务：创建一个html界面，通过jq实现按钮的监听，弹框老师特别帅，截图
+		任务：写一个servlet和ajax进行匹配，在servlet打印一句话，截图：ajax，web.xml
+		任务：收数据和发数据，截图：发下去的弹框截图
+		任务：实现登录功能（周一上课时候，我要你们当场截图给我看）
+		
+2、servlet原理
+
+
+
+3、页面跳转
+
+
+小结：编写代码步骤：
+	dao -》 service -》 界面 -》 servlet和web.xml配置
+	
+	英文单词写错；
+	404 -》 资源没找到 -》 路径问题 -》 可能是web.xml配置问题
+	乱码 -》 调整编码没调整好
+	返回数据点不出来 -》 dataType没写
+	前端表达式错误 -》 看一下ajax的格式是否正确
+	

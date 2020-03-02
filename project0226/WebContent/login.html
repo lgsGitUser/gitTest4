@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>登录</title>
+</head>
+<body>
+	<h1>登录业务</h1>
+	<hr>
+	<table align="center">
+		<tr>
+			<td>用户名</td>
+			<td><input placeholder="请输入用户名" id="name" type="text" /></td>
+		</tr>
+		<tr>
+			<td>密码</td>
+			<td><input placeholder="请输入密码" id="pwd" type="pawwsord" /></td>
+		</tr>
+		<tr align="center">
+			<td colspan="2">
+				<input id="doLogin" value="登录" type="button">
+			</td>
+		</tr>
+	</table>
+</body>
+<script type="text/javascript" src="jquery-3.4.1.min.js"></script>
+<script type="text/javascript">
+	$('#doLogin').click(function(){
+		// alert('老师特别帅');
+		// 参数：
+		// url:
+		// 需要访问的链接，如果写adminLogin，那么链接将是：http://localhost:8080/project0226/adminLogin
+		// 这里的url写法的意义也是和昨天的图片img标签的src相同
+		// data
+		// 先要通过jq来获取输入框的值，然后加载到data的参数中
+		// 这里的zhanghu和mima两个名字就是服务器中获取值的条件
+		// type:
+		// 我们发送数据的时候需要告诉系统我们用什么方式进行数据发送，发送方式一共七种，常用两种：get，post
+		// success：（状态码：200属于success）
+		// 后面跟着的是一个方法，这个方法只要服务器发回来数据就直接进行相应
+		// error:（状态码：200以外的都属于error）
+		// 后面也是跟着方法，服务器只要响应失败就调用此方法
+		var name = $('#name').val();
+		var pwd = $('#pwd').val();
+		$.ajax({
+			url: 'adminLogin', 
+			data:{'zhanghu':name, 'mima':pwd},
+			type:'post',
+			dataType:'JSON', // 这个意思是自动帮助我们转换JSON字符串，转换成JSON对象
+			success:function(msg){
+				// msg 仅仅是字符串而不是json对象所以没办法.message(也就是没办法点属性名),所以呢需要转换成json对象才可以
+				// alert(msg.message);
+				if(msg.id == 0){
+					alert(msg.message);
+				}else{
+					alert(msg.message);
+					// 再次访问服务器，和服务器说，我要xxx界面
+					window.location.href = msg.location;
+				}
+			},
+			error:function(msg){
+				alert('请联系管理员...');
+			}
+		});
+	});
+</script>
+
+</html>
