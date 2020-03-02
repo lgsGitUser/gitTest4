@@ -1,0 +1,273 @@
+复习：昨天学习了dao那一块的功能
+1、Service的使用
+	Service和Server是有什么区别吗？
+	Service：业务
+	Server：服务器
+	所以我们创建Service层是作为业务层使用
+	什么叫做业务层：
+		例如：方祥去超市买菜，家里人交代他买 酱油和醋
+		做法1：
+			方祥去超市买了酱油 拿回去交差
+			然后有出门去超市买了醋 再拿回去交差
+			也就是如果按照这样的业务来说，方祥其实是做了 2 个业务
+		做法2：
+			方祥去超市直接买了酱油和醋，拿回去交差
+			这样叫做做了1个业务
+	其实业务就是1个事情或多个事情的统一处理流程
+	
+	代码中是什么呢？
+	生活 代码
+	业务=事务（业务）
+	事情=dao的方法
+	
+	其实业务就是1个事情或多个事情的统一处理流程
+	其实事务就是1个dao方法或多个dao方法的统一处理流程
+	
+	小结：事务其实就是在service层的方法中调用 一个或多个dao方法的处理流程
+	因为有时候就像方祥买菜的原因，我们将多个事情统一做处理，效率更高
+	
+	
+	事务在代码中如何进行编写呢？
+	1、创建service包（我们就会将业务的代码全部写在里面）
+	2、创建接口类和他的对应实现类
+		注意：Service接口类命名方式就是Bean类名+Service
+		注意：Service实现类命名方式就是Bean类名+ServiceImpl
+	案例：查询所有的用户信息
+		从这里我们可以看出：查询所有的用户信息 = 1个dao方法
+		这确实算一个业务，  查询所有的用户信息 = 1个业务
+		
+	3、编写service接口类和实现类的方法
+		因为一个业务我们就在service层写一个方法
+		public class ZyAdminServiceImpl implements ZyAdminService {
+			@Override
+			public List<ZyAdmin> queryAllAdmins() {
+				return null;
+			}
+		}
+	4、在这个方法中获取Connection，到时候所有的dao都使用这个Connection去做事情（dao方法）
+	5、修改所有的dao方法，每个dao方法都需要传入Connection，并且不能在dao方法中关闭Connection
+	6、在service的方法中，将Connection自动提交关闭掉：
+	7、调用dao的方法
+	8、确保流程全部完成后，调用Connection的commit方法，否则调用Connection的rollback方法
+	9、在service方法中最后要将Connection关闭掉
+		public class ZyAdminServiceImpl implements ZyAdminService {
+			@Override
+			public List<ZyAdmin> queryAllAdmins() {
+				Connection conn = ConnUtil.getConn(); // 这里的Connection = 林方祥
+				try {
+					// 自动提交关闭，相当于不让林方祥回家交差，如果不写这句话相当于林方祥买了酱油就跑了，不管醋有没有卖
+					conn.setAutoCommit(false); 
+					ZyAdminDaoImpl impl = (ZyAdminDaoImpl) DaoFactory.newInstance().getDao("ZyAdminDao");
+					List<ZyAdmin> admins = impl.queryAll(conn);
+					conn.commit(); // 确定事情完成，可以回家了
+					return admins;
+				} catch (SQLException e) {
+					e.printStackTrace();
+				} finally {
+					try {
+						conn.close();
+					} catch (SQLException e) {
+						e.printStackTrace();
+					}
+				}
+				return null;
+			}
+		}
+	10、测试
+	任务：自己编写一个service，查询所有的用户信息，将service代码截图
+	
+	
+	
+2、Service的工厂
+	编写的方式和dao的工厂是一致的
+	
+	任务：编写一个service的工厂，测试打印
+
+3、Servlet的原理
+	网络：我们的三阶段主要学习的是BS架构，由二阶段的CS架构演变而来的，也就是客户端变成了浏览器
+	1、在WebContent文件夹创建一个叫做jf1908.html的文件，在内部写一段话
+	2、点击项目名称右键 - run as - run on serve
+		这时候Eclipse会将这个项目工程 复制给 Tomcat，并启动Tomcat
+		那么如何复制？
+			将src文件夹下的所有java文件数据进行编译，编译成class文件，然后复制所有class和属性文件
+			存放到WEB-INF这个文件夹的classes文件夹中
+			将WebContent这个文件夹复制过去，并且将WebContent文件夹的名字改成项目名称
+			
+	3、在浏览器端的地址栏输入：
+		localhost:8080/项目名/文件名
+	原理：也就是说，在地址栏输入的信息其实是访问了服务器：http://localhost:8080/project0226/jf1908.html
+		3.1.http是访问的协议，叫做超文本传输协议
+		3.2.localhost 意思是找到自己这台计算机
+		3.3.8080（端口号） 找到对应计算机的对应软件，这里找到的是Tomcat
+		3.4.project0226 找到这个软件下面的项目工程
+		3.5.jf1908.html 找到这个项目工程下的文件
+	当Tomcat启动后和Eclipse有没有什么关系：没任何关系，Eclipse仅仅是控制Tomcat的启动和关闭
+	也就是说服务器是Tomcat！！！不是Eclipse，Eclipse仅仅是编写代码，然后复制代码给Tomcat，启动Tomcat
+	
+	3.6.我在html中编写了：
+		<!DOCTYPE html>
+		<html>
+		<head>
+		<meta charset="UTF-8">
+		<title>Insert title here</title>
+		</head>
+		<body>
+			林方祥打酱油...
+			<img src="aaa.jpg">
+		</body>
+		</html>
+		浏览器如何去进行数据解析？
+		
+		刚刚3.5.说了浏览器通过地址栏找到了服务器中的这个文件，服务器发给浏览器，浏览器解析
+		如果在标签中有img标签，那么浏览器发现仅仅是一个url（链接）并不是真实的图片，所以浏览器会再次向服务器
+		发起请求，说，我要图片，叫做aaa.jpg，你给我，服务器收到信息，将图片发给浏览器，浏览器解析出来
+	
+		小结：一共2次
+	
+	3.7.我在html中编写了：
+		<!DOCTYPE html>
+		<html>
+		<head>
+		<meta charset="UTF-8">
+		<title>Insert title here</title>
+		</head>
+		<body>
+			林方祥打酱油...
+			<img src="aaa.jpg">
+			<img src="aaa.jpg">
+		</body>
+		</html>
+		
+		和3.6比较多了一个img标签，并且图片的资源是相同的
+		google浏览器有一个特点，如果url的资源是相同的，那么google浏览器会从自己的缓存中重新将这张图片进行读取
+		也就是不会再去访问服务器了，所以就2次
+		
+	3.8.我在html中编写了：
+		<!DOCTYPE html>
+		<html>
+		<head>
+		<meta charset="UTF-8">
+		<title>Insert title here</title>
+		</head>
+		<body>
+			林方祥打酱油...
+			<img src="aaa.jpg">
+			<img src="aaa.jpg?aaa=111">
+		</body>
+		</html>
+		
+		google浏览器虽然能够判断是否相同的url（链接），但是只要数据稍微改变，google浏览器就没办法判别了
+		所以img的两条信息，google浏览器会认为是不同的两条资源，所以这样的页面访问了3次
+		
+	3.9.我在html中编写了：
+		<!DOCTYPE html>
+		<html>
+		<head>
+		<meta charset="UTF-8">
+		<title>Insert title here</title>
+		</head>
+		<body>
+			林方祥打酱油...
+			<img src="aaa.jpg">
+			<img src="aaa.jpg?aaa=111">
+			<a href="http://www.baidu.com">baidu</a>
+		</body>
+		</html>
+		
+		a标签是在点击的时候才去获取或者说跳转，所以a标签不会去服务器找数据的，除非点击了才会
+	
+	3.10.路径的问题：
+		<!DOCTYPE html>
+		<html>
+		<head>
+		<meta charset="UTF-8">
+		<title>Insert title here</title>
+		</head>
+		<body>
+			林方祥打酱油...
+			<img src="aaa.jpg">
+			<img src="img/aaa.jpg">
+			<img src="/aaa.jpg">
+			<img src="http://localhost:8080/project0226/img/aaa.jpg">
+		</body>
+		</html>
+		
+		aaa.jpg是如何获取到的？
+		因为我们的浏览器的地址栏是：http://localhost:8080/project0226/jf1908.html，那么如果这个文件中需要xxx资源
+		那么url只需要写：资源的名称，例如：aaa.jpg，浏览器就会拼接前面的路径：
+			http://localhost:8080/project0226/aaa.jpg 然后去服务器访问
+	
+		
+		img/aaa.jpg是如何获取到的？
+		因为我们的浏览器的地址栏是：http://localhost:8080/project0226/jf1908.html，那么如果文件中需要xxx资源，
+		那么url的编写这里要注意： img/aaa.jpg 将 jf1908.html 替换掉，那么连接变成：
+			http://localhost:8080/project0226/img/aaa.jpg 然后去访问服务器
+		证明：图片是在project0226项目工程的img文件夹中
+		
+		
+		<img src="/aaa.jpg">是什么意思：
+		这里的一开始加上/意味着项目工程名都会被替换掉：
+		我们地址栏：http://localhost:8080/project0226/jf1908.html，
+		那么project0226/jf1908.html信息会被替换成aaa.jpg
+		变成：http://localhost:8080/aaa.jpg 所以没法访问
+		所以如果url（链接）一开始要写/ 的话，要编写成：<img src="/project0226/img/aaa.jpg">才能访问
+		
+		
+		<img src="http://localhost:8080/project0226/img/aaa.jpg">也能访问：
+		浏览器只要看到http://开头就不会去替换数据了，所以可以访问到
+		
+		
+		如果我把html文件丢在html文件夹中，那么地址栏如果写：http://localhost:8080/project0226/jf1908.html
+		是访问不到的，因为项目下没有html文件了，而这个文件在html文件夹中，所以url要写成
+		http://localhost:8080/project0226/html/jf1908.html
+		
+		
+		<img src="img/aaa.jpg"> 因为jf1908.html文件被放到html文件夹中了，所以需要访问到这个文件只能url是：
+		http://localhost:8080/project0226/html/jf1908.html，那么你的图片路径是 img/aaa.jpg的话仅仅是替换
+		jf1908.html的信息，路径变成：http://localhost:8080/project0226/html/img/aaa.jpg,所以找不到文件了
+		要找到文件必须要把html去掉，而../就是掉上一级的代码
+		<img src="../img/aaa.jpg">
+		
+	3.11.Request Method：请求方式
+		浏览器中默认的请求方式是Get请求，只有from和ajax可以改成post请求
+		所以在代码中有doGet和doPost什么时候代码写在哪里就明白了了吧
+		
+	3.12.浏览器和服务器的特点：
+		我们的浏览器和服务器和二阶段有很大不同的地方，我们的BS框架是短连接
+		林方祥（S） 和 周佳焰（B）
+		一定是浏览器先发起聊天：
+		
+		周佳焰：你好，我叫周佳焰；
+		林方祥：你好，我叫林方祥；
+		
+		周佳焰：你吃饭了吗？
+		林方祥：你谁啊？
+		
+		也就是说服务器是健忘症，一次应答之后服务器就忘记客户端是谁了，这就叫做短连接
+		这里短连接好处就是省流量，坏处就是服务器是健忘症
+		
+		解决方案：
+		周佳焰：你好，我叫周佳焰；
+		林方祥：你好，我叫林方祥；
+	    （做了一个牌子，牌子上面写着，这货叫做周佳焰，并且这牌子是我林方祥立的，将牌子挂在周佳焰身上）
+		
+		周佳焰：你吃饭了吗？
+		林方祥：
+			看下有没有自己立的牌子，并且看看这货叫什么名字，如果有回答：吃了或者没吃
+			如果没有，你tm谁啊
+			
+		这个牌子就叫做cookie，这个牌子其实就是一个字符串（32位的，32个字母（0-9，a-f））
+		
+		小结：cookie是谁创建的？服务器创建的
+			  cookie给了谁？浏览器，
+			  流浪器下次访问服务器都会携带cookie上来，服务器就能够认识这个浏览器了
+			  
+			  而做这个牌子（cookie）要看服务器是否写了这段代码
+			  牌子有时间限制的，默认30分钟，30分钟后牌子自动消失，消失后，s不认识b了
+		
+	
+	今晚在日报中：
+		路径的访问方式
+		bs的特点，以及优缺点，缺点如何解决
+	
+4、登录案例的实现
